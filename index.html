@@ -1,0 +1,2852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRoute AI - Intelligent Route Safety</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --safe: #22c55e;
+            --safe-light: #dcfce7;
+            --medium: #eab308;
+            --medium-light: #fef9c3;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .header i {
+            margin-right: 10px;
+            color: #fbbf24;
+        }
+
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        /* Input Section */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-light);
+            margin-bottom: 6px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 12px 12px 12px 42px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Route Buttons */
+        .route-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .route-btn {
+            padding: 16px 20px;
+            border: 2px solid;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+        }
+
+        .route-btn:hover {
+            transform: translateX(5px);
+        }
+
+        .route-btn.active {
+            color: white;
+        }
+
+        .route-btn.safe {
+            border-color: var(--safe);
+            color: var(--safe);
+        }
+
+        .route-btn.safe:hover,
+        .route-btn.safe.active {
+            background: var(--safe);
+            color: white;
+        }
+
+        .route-btn.medium {
+            border-color: var(--medium);
+            color: var(--medium);
+        }
+
+        .route-btn.medium:hover,
+        .route-btn.medium.active {
+            background: var(--medium);
+            color: white;
+        }
+
+        .route-btn.danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .route-btn.danger:hover,
+        .route-btn.danger.active {
+            background: var(--danger);
+            color: white;
+        }
+
+        .route-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* Route Details Panel */
+        .details-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .details-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .detail-value.safe { color: var(--safe); }
+        .detail-value.medium { color: var(--medium); }
+        .detail-value.danger { color: var(--danger); }
+
+        /* Map Container */
+        .map-wrapper {
+            position: relative;
+            height: 600px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .legend-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+
+        .legend-circle {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.3);
+            border: 2px solid var(--danger);
+        }
+
+        /* Quick Select */
+        .quick-select {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .quick-select-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .map-wrapper {
+                height: 400px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .legend {
+                bottom: 10px;
+                right: 10px;
+                padding: 12px;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Hero Image Section */
+        .hero-section {
+            position: relative;
+            height: 200px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.3;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .hero-overlay h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero-overlay p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Route Illustrations */
+        .route-illustration {
+            width: 100%;
+            height: 140px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .route-illustration.safe {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+        }
+
+        .route-illustration.medium {
+            background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+        }
+
+        .route-illustration.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .route-illustration i {
+            font-size: 3rem;
+            color: white;
+            z-index: 2;
+        }
+
+        /* Character Avatar Section */
+        .character-container {
+            width: 100%;
+            height: 180px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.5s ease;
+        }
+
+        .character-container.show {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .character-container.safe {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 50%, #86efac 100%);
+        }
+
+        .character-container.medium {
+            background: linear-gradient(135deg, #fef9c3 0%, #fde047 50%, #facc15 100%);
+        }
+
+        .character-container.danger {
+            background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 50%, #f87171 100%);
+        }
+
+        .character-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            animation: bounceIn 0.6s ease;
+            z-index: 2;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .character-message {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            white-space: nowrap;
+            animation: fadeInUp 0.5s ease 0.3s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .character-decoration {
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.15;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .character-decoration:nth-child(1) {
+            top: 10px;
+            left: 20px;
+            animation-delay: 0s;
+        }
+
+        .character-decoration:nth-child(2) {
+            top: 10px;
+            right: 20px;
+            animation-delay: 0.5s;
+        }
+
+        .character-decoration:nth-child(3) {
+            bottom: 50px;
+            left: 30px;
+            animation-delay: 1s;
+        }
+
+        .character-decoration:nth-child(4) {
+            bottom: 50px;
+            right: 30px;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .route-pattern {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            animation: slide 20s linear infinite;
+        }
+
+        @keyframes slide {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-50%, -50%); }
+        }
+
+        /* Feature Cards with Images */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature-item {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-icon.safe { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .feature-icon.fast { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .feature-icon.smart { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+
+        .feature-item h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .feature-item p {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        /* Decorative Elements */
+        .decoration-circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .decoration-circle-1 {
+            width: 300px;
+            height: 300px;
+            background: white;
+            top: -150px;
+            right: -150px;
+        }
+
+        .decoration-circle-2 {
+            width: 200px;
+            height: 200px;
+            background: white;
+            bottom: -100px;
+            left: -100px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header" style="position: relative; overflow: hidden;">
+            <div class="decoration-circle decoration-circle-1"></div>
+            <div class="decoration-circle decoration-circle-2"></div>
+            <h1><i class="fas fa-shield-alt"></i>SafeRoute AI</h1>
+            <p>Intelligent route planning with safety-first approach</p>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Hero Section -->
+                <div class="hero-section animate-in">
+                    <div class="route-pattern"></div>
+                    <div class="hero-overlay">
+                        <i class="fas fa-route" style="font-size: 2.5rem; margin-bottom: 10px;"></i>
+                        <h3>SafeRoute AI</h3>
+                        <p>Find the safest path to your destination</p>
+                    </div>
+                </div>
+
+                <!-- Input Card -->
+                <div class="card animate-in">
+                    <h2 class="card-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Route Input
+                    </h2>
+                    
+                    <div class="input-group">
+                        <label>Source Location</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-circle" style="color: var(--safe);"></i>
+                            <input type="text" id="sourceInput" placeholder="Enter source (e.g., New York)">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Destination</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-circle" style="color: var(--danger);"></i>
+                            <input type="text" id="destInput" placeholder="Enter destination (e.g., Los Angeles)">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="getRoutes()">
+                        <i class="fas fa-route"></i>
+                        Get Routes
+                    </button>
+
+                    <!-- Quick Select -->
+                    <div class="quick-select">
+                        <div class="quick-select-title">Tamil Nadu Routes</div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="setPreset('slm-mas')">Salem → Chennai</button>
+                            <button class="preset-btn" onclick="setPreset('cbe-mas')">Coimbatore → Chennai</button>
+                            <button class="preset-btn" onclick="setPreset('mdu-mas')">Madurai → Chennai</button>
+                            <button class="preset-btn" onclick="setPreset('slm-cbe')">Salem → Coimbatore</button>
+                            <button class="preset-btn" onclick="setPreset('trz-cbe')">Trichy → Coimbatore</button>
+                            <button class="preset-btn" onclick="setPreset('oot-mas')">Ooty → Chennai</button>
+                            <button class="preset-btn" onclick="setPreset('kod-mdu')">Kodaikanal → Madurai</button>
+                        </div>
+                        <div class="quick-select-title" style="margin-top: 12px;">South India Routes</div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="setPreset('chen-bang')">Chennai → Bangalore</button>
+                            <button class="preset-btn" onclick="setPreset('chen-hyd')">Chennai → Hyderabad</button>
+                            <button class="preset-btn" onclick="setPreset('chen-cok')">Chennai → Kochi</button>
+                            <button class="preset-btn" onclick="setPreset('bang-mys')">Bangalore → Mysore</button>
+                            <button class="preset-btn" onclick="setPreset('bang-hyd')">Bangalore → Hyderabad</button>
+                            <button class="preset-btn" onclick="setPreset('tvm-cok')">Trivandrum → Kochi</button>
+                            <button class="preset-btn" onclick="setPreset('mys-cok')">Mysore → Kochi</button>
+                            <button class="preset-btn" onclick="setPreset('hyd-chen')">Hyderabad → Chennai</button>
+                            <button class="preset-btn" onclick="setPreset('hyd-vij')">Hyderabad → Vijayawada</button>
+                        </div>
+                        <div class="quick-select-title" style="margin-top: 12px;">Major Indian Cities</div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="setPreset('mum-del')">Mumbai → Delhi</button>
+                            <button class="preset-btn" onclick="setPreset('mum-bang')">Mumbai → Bangalore</button>
+                            <button class="preset-btn" onclick="setPreset('mum-chen')">Mumbai → Chennai</button>
+                            <button class="preset-btn" onclick="setPreset('mum-pune')">Mumbai → Pune</button>
+                            <button class="preset-btn" onclick="setPreset('del-jaip')">Delhi → Jaipur</button>
+                            <button class="preset-btn" onclick="setPreset('del-agra')">Delhi → Agra</button>
+                            <button class="preset-btn" onclick="setPreset('del-amr')">Delhi → Amritsar</button>
+                            <button class="preset-btn" onclick="setPreset('kol-sil')">Kolkata → Siliguri</button>
+                            <button class="preset-btn" onclick="setPreset('ahm-sur')">Ahmedabad → Surat</button>
+                        </div>
+                        <div class="quick-select-title" style="margin-top: 12px;">International</div>
+                        <div class="preset-buttons">
+                            <button class="preset-btn" onclick="setPreset('nyc-la')">NYC → LA</button>
+                            <button class="preset-btn" onclick="setPreset('lon-par')">London → Paris</button>
+                            <button class="preset-btn" onclick="setPreset('tok-osa')">Tokyo → Osaka</button>
+                            <button class="preset-btn" onclick="setPreset('syd-mel')">Sydney → Melbourne</button>
+                            <button class="preset-btn" onclick="setPreset('dub-abu')">Dubai → Abu Dhabi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Route Selection Card -->
+                <div class="card animate-in" style="margin-top: 20px;">
+                    <h2 class="card-title">
+                        <i class="fas fa-random"></i>
+                        Select Route
+                    </h2>
+
+                    <!-- Character Avatars -->
+                    <div id="characterContainer" class="character-container">
+                        <!-- Safe Route Character -->
+                        <div id="character-safe" class="character-content" style="display: none; width: 100%; height: 100%; position: relative;">
+                            <div class="character-decoration">🌟</div>
+                            <div class="character-decoration">✨</div>
+                            <div class="character-decoration">🛡️</div>
+                            <div class="character-decoration">💚</div>
+                            <div class="character-avatar">👩‍💼</div>
+                            <div class="character-message">"I'll guide you on the safest path!"</div>
+                        </div>
+                        <!-- Medium Route Character -->
+                        <div id="character-medium" class="character-content" style="display: none; width: 100%; height: 100%; position: relative;">
+                            <div class="character-decoration">⚡</div>
+                            <div class="character-decoration">🎯</div>
+                            <div class="character-decoration">⏱️</div>
+                            <div class="character-decoration">💛</div>
+                            <div class="character-avatar">👨‍💼</div>
+                            <div class="character-message">"Best balance of speed and safety!"</div>
+                        </div>
+                        <!-- Danger Route Character -->
+                        <div id="character-danger" class="character-content" style="display: none; width: 100%; height: 100%; position: relative;">
+                            <div class="character-decoration">⚠️</div>
+                            <div class="character-decoration">🚨</div>
+                            <div class="character-decoration">⏰</div>
+                            <div class="character-decoration">❤️</div>
+                            <div class="character-avatar">👷‍♀️</div>
+                            <div class="character-message">"Fastest route, but be careful!"</div>
+                        </div>
+                    </div>
+
+                    <!-- Route Illustrations -->
+                    <div id="routeIllustrations" class="route-illustrations" style="display: none;">
+                        <div class="route-illustration safe" id="illustration-safe">
+                            <div class="route-pattern"></div>
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="route-illustration medium" id="illustration-medium" style="display: none;">
+                            <div class="route-pattern"></div>
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <div class="route-illustration danger" id="illustration-danger" style="display: none;">
+                            <div class="route-pattern"></div>
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+
+                    <div id="routeButtons" class="route-buttons">
+                        <div class="empty-state">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <p>Enter locations and click "Get Routes" to see available paths</p>
+                        </div>
+                    </div>
+
+                    <!-- Feature Grid -->
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon safe">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h4>Safety First</h4>
+                            <p>Avoid danger zones</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon fast">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <h4>Fast Routes</h4>
+                            <p>Optimized paths</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon smart">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <h4>Smart AI</h4>
+                            <p>Intelligent choices</p>
+                        </div>
+                    </div>
+
+                    <!-- Route Details -->
+                    <div id="routeDetails" class="details-panel hidden">
+                        <div class="details-title">Route Details</div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-road"></i>
+                                Distance
+                            </span>
+                            <span class="detail-value" id="detailDistance">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-clock"></i>
+                                Duration
+                            </span>
+                            <span class="detail-value" id="detailDuration">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-shield-alt"></i>
+                                Safety Level
+                            </span>
+                            <span class="detail-value" id="detailSafety">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Section -->
+            <div class="map-section">
+                <div class="map-wrapper">
+                    <div id="map"></div>
+                    
+                    <!-- Legend -->
+                    <div class="legend">
+                        <div class="legend-title">Legend</div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--safe);"></div>
+                            <span>Safe Route</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--medium);"></div>
+                            <span>Medium Route</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--danger);"></div>
+                            <span>Dangerous Route</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-circle"></div>
+                            <span>Danger Zone</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Global variables
+        let map;
+        let currentRoutes = {};
+        let markers = [];
+        let dangerZones = [];
+        let routeLayers = [];
+
+        // Predefined danger zones (simulated high-crime/dangerous areas)
+        const DANGER_ZONES = [
+            { lat: 39.8283, lng: -98.5795, radius: 80000, name: "Danger Zone Alpha" },
+            { lat: 38.5, lng: -95.0, radius: 60000, name: "Danger Zone Beta" },
+            { lat: 35.0, lng: -100.0, radius: 70000, name: "Danger Zone Gamma" },
+            { lat: 40.0, lng: -105.0, radius: 50000, name: "Danger Zone Delta" },
+            { lat: 32.0, lng: -95.0, radius: 65000, name: "Danger Zone Epsilon" },
+            { lat: 37.0, lng: -110.0, radius: 75000, name: "Danger Zone Zeta" },
+        ];
+
+        // Preset locations
+        const PRESETS = {
+            // USA Routes
+            'nyc-la': { source: 'New York, NY', dest: 'Los Angeles, CA' },
+            'sf-la': { source: 'San Francisco, CA', dest: 'Los Angeles, CA' },
+            'chi-hou': { source: 'Chicago, IL', dest: 'Houston, TX' },
+            'mia-atl': { source: 'Miami, FL', dest: 'Atlanta, GA' },
+            // Europe Routes
+            'lon-par': { source: 'London', dest: 'Paris' },
+            'ber-rom': { source: 'Berlin', dest: 'Rome' },
+            'mad-bar': { source: 'Madrid', dest: 'Barcelona' },
+            'ams-bru': { source: 'Amsterdam', dest: 'Brussels' },
+            // Asia Routes
+            'tok-osa': { source: 'Tokyo', dest: 'Osaka' },
+            'bei-sha': { source: 'Beijing', dest: 'Shanghai' },
+            'mum-del': { source: 'Mumbai', dest: 'Delhi' },
+            'sin-kul': { source: 'Singapore', dest: 'Kuala Lumpur' },
+            // Other International
+            'syd-mel': { source: 'Sydney', dest: 'Melbourne' },
+            'tor-van': { source: 'Toronto', dest: 'Vancouver' },
+            'dub-abu': { source: 'Dubai', dest: 'Abu Dhabi' },
+            'rio-sao': { source: 'Rio de Janeiro', dest: 'Sao Paulo' },
+            // Tamil Nadu Local Routes
+            'slm-mas': { source: 'Salem', dest: 'Chennai' },
+            'cbe-mas': { source: 'Coimbatore', dest: 'Chennai' },
+            'mdu-mas': { source: 'Madurai', dest: 'Chennai' },
+            'trz-cbe': { source: 'Trichy', dest: 'Coimbatore' },
+            'slm-cbe': { source: 'Salem', dest: 'Coimbatore' },
+            'mdu-cbe': { source: 'Madurai', dest: 'Coimbatore' },
+            'oot-mas': { source: 'Ooty', dest: 'Chennai' },
+            'kod-mdu': { source: 'Kodaikanal', dest: 'Madurai' },
+            'eri-cbe': { source: 'Erode', dest: 'Coimbatore' },
+            'tpr-cbe': { source: 'Tiruppur', dest: 'Coimbatore' },
+            // Kerala Routes
+            'tvm-cok': { source: 'Trivandrum', dest: 'Kochi' },
+            'cok-klr': { source: 'Kochi', dest: 'Kozhikode' },
+            'tvm-klr': { source: 'Trivandrum', dest: 'Kozhikode' },
+            'munnar-cok': { source: 'Munnar', dest: 'Kochi' },
+            'way-cok': { source: 'Wayanad', dest: 'Kochi' },
+            // Karnataka Routes
+            'bang-mys': { source: 'Bangalore', dest: 'Mysore' },
+            'bang-hub': { source: 'Bangalore', dest: 'Hubli' },
+            'bang-man': { source: 'Bangalore', dest: 'Mangalore' },
+            'mys-cok': { source: 'Mysore', dest: 'Kochi' },
+            'coorg-bang': { source: 'Coorg', dest: 'Bangalore' },
+            // Andhra/Telangana Routes
+            'hyd-vij': { source: 'Hyderabad', dest: 'Vijayawada' },
+            'hyd-chen': { source: 'Hyderabad', dest: 'Chennai' },
+            'vij-chen': { source: 'Vijayawada', dest: 'Chennai' },
+            // Maharashtra Routes
+            'mum-pune': { source: 'Mumbai', dest: 'Pune' },
+            'mum-nas': { source: 'Mumbai', dest: 'Nashik' },
+            'pune-nas': { source: 'Pune', dest: 'Nashik' },
+            // North India Routes
+            'del-jaip': { source: 'Delhi', dest: 'Jaipur' },
+            'del-agra': { source: 'Delhi', dest: 'Agra' },
+            'del-chd': { source: 'Delhi', dest: 'Chandigarh' },
+            'del-amr': { source: 'Delhi', dest: 'Amritsar' },
+            'jaip-udaip': { source: 'Jaipur', dest: 'Udaipur' },
+            // Gujarat Routes
+            'ahm-sur': { source: 'Ahmedabad', dest: 'Surat' },
+            'ahm-vad': { source: 'Ahmedabad', dest: 'Vadodara' },
+            'ahm-raj': { source: 'Ahmedabad', dest: 'Rajkot' },
+            // West Bengal Routes
+            'kol-sil': { source: 'Kolkata', dest: 'Siliguri' },
+            'kol-durg': { source: 'Kolkata', dest: 'Durgapur' },
+            // Other Indian Routes
+            'chen-bang': { source: 'Chennai', dest: 'Bangalore' },
+            'chen-hyd': { source: 'Chennai', dest: 'Hyderabad' },
+            'chen-cok': { source: 'Chennai', dest: 'Kochi' },
+            'bang-hyd': { source: 'Bangalore', dest: 'Hyderabad' },
+            'bang-chen': { source: 'Bangalore', dest: 'Chennai' },
+            'mum-bang': { source: 'Mumbai', dest: 'Bangalore' },
+            'mum-chen': { source: 'Mumbai', dest: 'Chennai' },
+            'mum-del': { source: 'Mumbai', dest: 'Delhi' },
+            'pune-bang': { source: 'Pune', dest: 'Bangalore' },
+            'pune-chen': { source: 'Pune', dest: 'Chennai' },
+            'kochi-bang': { source: 'Kochi', dest: 'Bangalore' },
+            'kochi-chen': { source: 'Kochi', dest: 'Chennai' }
+        };
+
+        // City coordinates database - Global coverage
+        const CITY_COORDS = {
+            // United States
+            'new york': { lat: 40.7128, lng: -74.0060 },
+            'nyc': { lat: 40.7128, lng: -74.0060 },
+            'los angeles': { lat: 34.0522, lng: -118.2437 },
+            'la': { lat: 34.0522, lng: -118.2437 },
+            'chicago': { lat: 41.8781, lng: -87.6298 },
+            'houston': { lat: 29.7604, lng: -95.3698 },
+            'phoenix': { lat: 33.4484, lng: -112.0740 },
+            'philadelphia': { lat: 39.9526, lng: -75.1652 },
+            'san antonio': { lat: 29.4241, lng: -98.4936 },
+            'san diego': { lat: 32.7157, lng: -117.1611 },
+            'dallas': { lat: 32.7767, lng: -96.7970 },
+            'san jose': { lat: 37.3382, lng: -121.8863 },
+            'austin': { lat: 30.2672, lng: -97.7431 },
+            'jacksonville': { lat: 30.3322, lng: -81.6557 },
+            'san francisco': { lat: 37.7749, lng: -122.4194 },
+            'sf': { lat: 37.7749, lng: -122.4194 },
+            'columbus': { lat: 39.9612, lng: -82.9988 },
+            'charlotte': { lat: 35.2271, lng: -80.8431 },
+            'indianapolis': { lat: 39.7684, lng: -86.1581 },
+            'fort worth': { lat: 32.7555, lng: -97.3308 },
+            'seattle': { lat: 47.6062, lng: -122.3321 },
+            'denver': { lat: 39.7392, lng: -104.9903 },
+            'el paso': { lat: 31.7619, lng: -106.4850 },
+            'detroit': { lat: 42.3314, lng: -83.0458 },
+            'washington': { lat: 38.9072, lng: -77.0369 },
+            'washington dc': { lat: 38.9072, lng: -77.0369 },
+            'boston': { lat: 42.3601, lng: -71.0589 },
+            'memphis': { lat: 35.1495, lng: -90.0490 },
+            'nashville': { lat: 36.1627, lng: -86.7816 },
+            'portland': { lat: 45.5152, lng: -122.6784 },
+            'oklahoma city': { lat: 35.4676, lng: -97.5164 },
+            'las vegas': { lat: 36.1699, lng: -115.1398 },
+            'louisville': { lat: 38.2527, lng: -85.7585 },
+            'baltimore': { lat: 39.2904, lng: -76.6122 },
+            'milwaukee': { lat: 43.0389, lng: -87.9065 },
+            'albuquerque': { lat: 35.0844, lng: -106.6504 },
+            'tucson': { lat: 32.2226, lng: -110.9747 },
+            'fresno': { lat: 36.7378, lng: -119.7871 },
+            'sacramento': { lat: 38.5816, lng: -121.4944 },
+            'mesa': { lat: 33.4152, lng: -111.8315 },
+            'kansas city': { lat: 39.0997, lng: -94.5786 },
+            'atlanta': { lat: 33.7490, lng: -84.3880 },
+            'long beach': { lat: 33.7701, lng: -118.1937 },
+            'colorado springs': { lat: 38.8339, lng: -104.8214 },
+            'raleigh': { lat: 35.7796, lng: -78.6382 },
+            'miami': { lat: 25.7617, lng: -80.1918 },
+            'virginia beach': { lat: 36.8529, lng: -75.9780 },
+            'omaha': { lat: 41.2565, lng: -95.9345 },
+            'oakland': { lat: 37.8044, lng: -122.2712 },
+            'minneapolis': { lat: 44.9778, lng: -93.2650 },
+            'tulsa': { lat: 36.1540, lng: -95.9928 },
+            'arlington': { lat: 32.7357, lng: -97.1081 },
+            'wichita': { lat: 37.6872, lng: -97.3301 },
+            'bakersfield': { lat: 35.3733, lng: -119.0187 },
+            'new orleans': { lat: 29.9511, lng: -90.0715 },
+
+            // United Kingdom
+            'london': { lat: 51.5074, lng: -0.1278 },
+            'manchester': { lat: 53.4808, lng: -2.2426 },
+            'birmingham': { lat: 52.4862, lng: -1.8904 },
+            'leeds': { lat: 53.8008, lng: -1.5491 },
+            'glasgow': { lat: 55.8609, lng: -4.2514 },
+            'sheffield': { lat: 53.3811, lng: -1.4701 },
+            'bradford': { lat: 53.7960, lng: -1.7594 },
+            'liverpool': { lat: 53.4084, lng: -2.9916 },
+            'edinburgh': { lat: 55.9533, lng: -3.1883 },
+            'bristol': { lat: 51.4545, lng: -2.5879 },
+
+            // Canada
+            'toronto': { lat: 43.6532, lng: -79.3832 },
+            'montreal': { lat: 45.5017, lng: -73.5673 },
+            'vancouver': { lat: 49.2827, lng: -123.1207 },
+            'calgary': { lat: 51.0447, lng: -114.0719 },
+            'ottawa': { lat: 45.4215, lng: -75.6972 },
+            'edmonton': { lat: 53.5461, lng: -113.4938 },
+            'quebec city': { lat: 46.8139, lng: -71.2082 },
+            'winnipeg': { lat: 49.8951, lng: -97.1384 },
+            'hamilton': { lat: 43.2557, lng: -79.8711 },
+
+            // Australia
+            'sydney': { lat: -33.8688, lng: 151.2093 },
+            'melbourne': { lat: -37.8136, lng: 144.9631 },
+            'brisbane': { lat: -27.4698, lng: 153.0251 },
+            'perth': { lat: -31.9505, lng: 115.8605 },
+            'adelaide': { lat: -34.9285, lng: 138.6007 },
+            'gold coast': { lat: -28.0167, lng: 153.4000 },
+            'newcastle': { lat: -32.9283, lng: 151.7817 },
+            'canberra': { lat: -35.2809, lng: 149.1300 },
+
+            // Germany
+            'berlin': { lat: 52.5200, lng: 13.4050 },
+            'hamburg': { lat: 53.5511, lng: 9.9937 },
+            'munich': { lat: 48.1351, lng: 11.5820 },
+            'cologne': { lat: 50.9375, lng: 6.9603 },
+            'frankfurt': { lat: 50.1109, lng: 8.6821 },
+            'stuttgart': { lat: 48.7758, lng: 9.1829 },
+            'dusseldorf': { lat: 51.2277, lng: 6.7735 },
+            'dortmund': { lat: 51.5136, lng: 7.4653 },
+            'essen': { lat: 51.4556, lng: 7.0116 },
+            'leipzig': { lat: 51.3397, lng: 12.3731 },
+
+            // France
+            'paris': { lat: 48.8566, lng: 2.3522 },
+            'marseille': { lat: 43.2965, lng: 5.3698 },
+            'lyon': { lat: 45.7640, lng: 4.8357 },
+            'toulouse': { lat: 43.6047, lng: 1.4442 },
+            'nice': { lat: 43.7102, lng: 7.2620 },
+            'nantes': { lat: 47.2184, lng: -1.5536 },
+            'strasbourg': { lat: 48.5734, lng: 7.7521 },
+            'montpellier': { lat: 43.6108, lng: 3.8767 },
+            'bordeaux': { lat: 44.8378, lng: -0.5792 },
+            'lille': { lat: 50.6292, lng: 3.0573 },
+
+            // Italy
+            'rome': { lat: 41.9028, lng: 12.4964 },
+            'milan': { lat: 45.4642, lng: 9.1900 },
+            'naples': { lat: 40.8518, lng: 14.2681 },
+            'turin': { lat: 45.0703, lng: 7.6869 },
+            'palermo': { lat: 38.1157, lng: 13.3615 },
+            'genoa': { lat: 44.4056, lng: 8.9463 },
+            'bologna': { lat: 44.4949, lng: 11.3426 },
+            'florence': { lat: 43.7696, lng: 11.2558 },
+            'venice': { lat: 45.4408, lng: 12.3155 },
+
+            // Spain
+            'madrid': { lat: 40.4168, lng: -3.7038 },
+            'barcelona': { lat: 41.3851, lng: 2.1734 },
+            'valencia': { lat: 39.4699, lng: -0.3763 },
+            'seville': { lat: 37.3891, lng: -5.9845 },
+            'zaragoza': { lat: 41.6488, lng: -0.8891 },
+            'malaga': { lat: 36.7213, lng: -4.4214 },
+            'murcia': { lat: 37.9922, lng: -1.1307 },
+            'palma': { lat: 39.5696, lng: 2.6502 },
+            'bilbao': { lat: 43.2630, lng: -2.9350 },
+
+            // Japan
+            'tokyo': { lat: 35.6762, lng: 139.6503 },
+            'yokohama': { lat: 35.4437, lng: 139.6380 },
+            'osaka': { lat: 34.6937, lng: 135.5023 },
+            'nagoya': { lat: 35.1815, lng: 136.9066 },
+            'sapporo': { lat: 43.0618, lng: 141.3545 },
+            'fukuoka': { lat: 33.5902, lng: 130.4017 },
+            'kobe': { lat: 34.6901, lng: 135.1955 },
+            'kyoto': { lat: 35.0116, lng: 135.7681 },
+            'kawasaki': { lat: 35.5309, lng: 139.7030 },
+            'hiroshima': { lat: 34.3853, lng: 132.4553 },
+
+            // China
+            'shanghai': { lat: 31.2304, lng: 121.4737 },
+            'beijing': { lat: 39.9042, lng: 116.4074 },
+            'guangzhou': { lat: 23.1291, lng: 113.2644 },
+            'shenzhen': { lat: 22.5431, lng: 114.0579 },
+            'chengdu': { lat: 30.5728, lng: 104.0668 },
+            'hangzhou': { lat: 30.2741, lng: 120.1551 },
+            'wuhan': { lat: 30.5928, lng: 114.3055 },
+            'xian': { lat: 34.3416, lng: 108.9398 },
+            'nanjing': { lat: 32.0603, lng: 118.7969 },
+            'chongqing': { lat: 29.5630, lng: 106.5516 },
+
+            // India - Major Cities
+            'mumbai': { lat: 19.0760, lng: 72.8777 },
+            'delhi': { lat: 28.6139, lng: 77.2090 },
+            'bangalore': { lat: 12.9716, lng: 77.5946 },
+            'bengaluru': { lat: 12.9716, lng: 77.5946 },
+            'hyderabad': { lat: 17.3850, lng: 78.4867 },
+            'ahmedabad': { lat: 23.0225, lng: 72.5714 },
+            'chennai': { lat: 13.0827, lng: 80.2707 },
+            'madras': { lat: 13.0827, lng: 80.2707 },
+            'kolkata': { lat: 22.5726, lng: 88.3639 },
+            'calcutta': { lat: 22.5726, lng: 88.3639 },
+            'pune': { lat: 18.5204, lng: 73.8567 },
+            'jaipur': { lat: 26.9124, lng: 75.7873 },
+            'lucknow': { lat: 26.8467, lng: 80.9462 },
+            'kanpur': { lat: 26.4499, lng: 80.3319 },
+            'nagpur': { lat: 21.1458, lng: 79.0882 },
+            'indore': { lat: 22.7196, lng: 75.8577 },
+            'thane': { lat: 19.2183, lng: 72.9781 },
+            'bhopal': { lat: 23.2599, lng: 77.4126 },
+            'visakhapatnam': { lat: 17.6868, lng: 83.2185 },
+            'vadodara': { lat: 22.3072, lng: 73.1812 },
+            'firozabad': { lat: 27.1591, lng: 78.3957 },
+            'ludhiana': { lat: 30.9010, lng: 75.8573 },
+            'rajkot': { lat: 22.3039, lng: 70.8022 },
+            'agra': { lat: 27.1767, lng: 78.0081 },
+            'siliguri': { lat: 26.7271, lng: 88.3953 },
+            'durgapur': { lat: 23.5204, lng: 87.3119 },
+            'chandigarh': { lat: 30.7333, lng: 76.7794 },
+            'dehradun': { lat: 30.3165, lng: 78.0322 },
+            'bhubaneswar': { lat: 20.2961, lng: 85.8245 },
+            'patna': { lat: 25.5941, lng: 85.1376 },
+            'ranchi': { lat: 23.3441, lng: 85.3096 },
+            'guwahati': { lat: 26.1445, lng: 91.7362 },
+            'shillong': { lat: 25.5788, lng: 91.8933 },
+            'imphal': { lat: 24.8170, lng: 93.9368 },
+            'kohima': { lat: 25.6586, lng: 94.1053 },
+            'agartala': { lat: 23.8315, lng: 91.2868 },
+            'aizawl': { lat: 23.7271, lng: 92.7176 },
+            'itanagar': { lat: 27.0844, lng: 93.6053 },
+            'gangtok': { lat: 27.3389, lng: 88.6065 },
+            'port blair': { lat: 11.6234, lng: 92.7265 },
+            'daman': { lat: 20.3974, lng: 72.8328 },
+            'silvassa': { lat: 20.2763, lng: 73.0083 },
+            'kavaratti': { lat: 10.5593, lng: 72.6358 },
+            'puducherry': { lat: 11.9416, lng: 79.8083 },
+            'pondicherry': { lat: 11.9416, lng: 79.8083 },
+
+            // Tamil Nadu Cities
+            'salem': { lat: 11.6643, lng: 78.1460 },
+            'coimbatore': { lat: 11.0168, lng: 76.9558 },
+            'madurai': { lat: 9.9252, lng: 78.1198 },
+            'tiruchirappalli': { lat: 10.7905, lng: 78.7047 },
+            'trichy': { lat: 10.7905, lng: 78.7047 },
+            'tiruppur': { lat: 11.1085, lng: 77.3411 },
+            'erode': { lat: 11.3410, lng: 77.7172 },
+            'vellore': { lat: 12.9165, lng: 79.1325 },
+            'thoothukudi': { lat: 8.7642, lng: 78.1348 },
+            'tuticorin': { lat: 8.7642, lng: 78.1348 },
+            'nagercoil': { lat: 8.1833, lng: 77.4119 },
+            'thanjavur': { lat: 10.7860, lng: 79.1378 },
+            'dindigul': { lat: 10.3623, lng: 77.9695 },
+            'karur': { lat: 10.9601, lng: 78.0766 },
+            'namakkal': { lat: 11.2194, lng: 78.1678 },
+            'hosur': { lat: 12.7409, lng: 77.8253 },
+            'krishnagiri': { lat: 12.5266, lng: 78.2140 },
+            'cuddalore': { lat: 11.7447, lng: 79.7680 },
+            'kanchipuram': { lat: 12.8342, lng: 79.7036 },
+            'tirunelveli': { lat: 8.7139, lng: 77.7567 },
+            'kanyakumari': { lat: 8.0883, lng: 77.5385 },
+            'ooty': { lat: 11.4064, lng: 76.6932 },
+            'kodaikanal': { lat: 10.2381, lng: 77.4892 },
+            'rameswaram': { lat: 9.2876, lng: 79.3129 },
+            'kumbakonam': { lat: 10.9617, lng: 79.3881 },
+
+            // Kerala Cities
+            'thiruvananthapuram': { lat: 8.5241, lng: 76.9366 },
+            'trivandrum': { lat: 8.5241, lng: 76.9366 },
+            'kochi': { lat: 9.9312, lng: 76.2673 },
+            'cochin': { lat: 9.9312, lng: 76.2673 },
+            'kozhikode': { lat: 11.2588, lng: 75.7804 },
+            'calicut': { lat: 11.2588, lng: 75.7804 },
+            'thrissur': { lat: 10.5276, lng: 76.2144 },
+            'alappuzha': { lat: 9.4981, lng: 76.3388 },
+            'alleppey': { lat: 9.4981, lng: 76.3388 },
+            'kollam': { lat: 8.8932, lng: 76.6141 },
+            'quilon': { lat: 8.8932, lng: 76.6141 },
+            'palakkad': { lat: 10.7867, lng: 76.6548 },
+            'malappuram': { lat: 11.0732, lng: 76.0740 },
+            'kannur': { lat: 11.8745, lng: 75.3704 },
+            'kanhangad': { lat: 12.3077, lng: 75.1063 },
+            'kasaragod': { lat: 12.5000, lng: 74.9833 },
+            'munnar': { lat: 10.0889, lng: 77.0595 },
+            'thekkady': { lat: 9.6008, lng: 77.1665 },
+            'wayanad': { lat: 11.6854, lng: 76.1320 },
+
+            // Karnataka Cities
+            'mysore': { lat: 12.2958, lng: 76.6394 },
+            'mysuru': { lat: 12.2958, lng: 76.6394 },
+            'hubli': { lat: 15.3647, lng: 75.1240 },
+            'hubballi': { lat: 15.3647, lng: 75.1240 },
+            'mangalore': { lat: 12.9141, lng: 74.8560 },
+            'mangaluru': { lat: 12.9141, lng: 74.8560 },
+            'belgaum': { lat: 15.8497, lng: 74.4977 },
+            'belagavi': { lat: 15.8497, lng: 74.4977 },
+            'gulbarga': { lat: 17.3297, lng: 76.8343 },
+            'kalaburagi': { lat: 17.3297, lng: 76.8343 },
+            'davanagere': { lat: 14.4644, lng: 75.9218 },
+            'bellary': { lat: 15.1394, lng: 76.9214 },
+            'ballari': { lat: 15.1394, lng: 76.9214 },
+            'bijapur': { lat: 16.8302, lng: 75.7100 },
+            'vijayapura': { lat: 16.8302, lng: 75.7100 },
+            'shimoga': { lat: 13.9299, lng: 75.5681 },
+            'shivamogga': { lat: 13.9299, lng: 75.5681 },
+            'tumkur': { lat: 13.3392, lng: 77.1140 },
+            'tumakuru': { lat: 13.3392, lng: 77.1140 },
+            'raichur': { lat: 16.2076, lng: 77.3463 },
+            'udupi': { lat: 13.3409, lng: 74.7421 },
+            'hassan': { lat: 13.0072, lng: 76.0960 },
+            'chikmagalur': { lat: 13.3180, lng: 75.7736 },
+            'chikkamagaluru': { lat: 13.3180, lng: 75.7736 },
+            'hampi': { lat: 15.3350, lng: 76.4600 },
+            'gokarna': { lat: 14.5500, lng: 74.3167 },
+            'coorg': { lat: 12.4208, lng: 75.7397 },
+            'kodagu': { lat: 12.4208, lng: 75.7397 },
+
+            // Andhra Pradesh Cities
+            'vijayawada': { lat: 16.5062, lng: 80.6480 },
+            'guntur': { lat: 16.3067, lng: 80.4365 },
+            'nellore': { lat: 14.4426, lng: 79.9865 },
+            'kurnool': { lat: 15.8281, lng: 78.0373 },
+            'rajahmundry': { lat: 17.0005, lng: 81.8040 },
+            'tirupati': { lat: 13.6288, lng: 79.4192 },
+            'kakinada': { lat: 16.9891, lng: 82.2475 },
+            'kadapa': { lat: 14.4673, lng: 78.8242 },
+            'anantapur': { lat: 14.6819, lng: 77.6006 },
+            'vizianagaram': { lat: 18.1067, lng: 83.3956 },
+            'eluru': { lat: 16.7107, lng: 81.0952 },
+            'ongole': { lat: 15.5057, lng: 80.0499 },
+
+            // Telangana Cities
+            'warangal': { lat: 17.9689, lng: 79.5941 },
+            'nizamabad': { lat: 18.6725, lng: 78.0941 },
+            'karimnagar': { lat: 18.4392, lng: 79.1288 },
+            'khammam': { lat: 17.2473, lng: 80.1514 },
+            'ramagundam': { lat: 18.7591, lng: 79.4740 },
+            'secunderabad': { lat: 17.4399, lng: 78.4983 },
+
+            // Maharashtra Cities
+            'navi mumbai': { lat: 19.0330, lng: 73.0297 },
+            'nagpur': { lat: 21.1458, lng: 79.0882 },
+            'nashik': { lat: 19.9975, lng: 73.7898 },
+            'vasai virar': { lat: 19.3919, lng: 72.8397 },
+            'aurangabad': { lat: 19.8762, lng: 75.3433 },
+            'navi mumbai': { lat: 19.0330, lng: 73.0297 },
+            'solapur': { lat: 17.6599, lng: 75.9064 },
+            'jalgaon': { lat: 21.0077, lng: 75.5626 },
+            'amravati': { lat: 20.9320, lng: 77.7523 },
+            'kolhapur': { lat: 16.7050, lng: 74.2433 },
+            'ulhasnagar': { lat: 19.2215, lng: 73.1645 },
+            'malegaon': { lat: 20.5547, lng: 74.5082 },
+            'latur': { lat: 18.4088, lng: 76.5604 },
+            'dhule': { lat: 20.9042, lng: 74.7749 },
+            'ahmednagar': { lat: 19.0948, lng: 74.7380 },
+            'sangli': { lat: 16.8524, lng: 74.5815 },
+            'shirdi': { lat: 19.7606, lng: 74.4753 },
+            'mahabaleshwar': { lat: 17.9237, lng: 73.6586 },
+            'lonavala': { lat: 18.7487, lng: 73.4062 },
+            'alibaug': { lat: 18.6551, lng: 72.8812 },
+
+            // Gujarat Cities
+            'surat': { lat: 21.1702, lng: 72.8311 },
+            'vadodara': { lat: 22.3072, lng: 73.1812 },
+            'rajkot': { lat: 22.3039, lng: 70.8022 },
+            'bhavnagar': { lat: 21.7645, lng: 72.1519 },
+            'jamnagar': { lat: 22.4707, lng: 70.0577 },
+            'gandhinagar': { lat: 23.2156, lng: 72.6369 },
+            'junagadh': { lat: 21.5222, lng: 70.4579 },
+            'gandhidham': { lat: 23.0753, lng: 70.1337 },
+            'anand': { lat: 22.5645, lng: 72.9289 },
+            'navsari': { lat: 20.9467, lng: 72.9520 },
+            'morbi': { lat: 22.8173, lng: 70.8377 },
+            'nadiad': { lat: 22.6916, lng: 72.8634 },
+            'surendranagar': { lat: 22.7284, lng: 71.6371 },
+            'bharuch': { lat: 21.7051, lng: 72.9959 },
+            'mehsana': { lat: 23.5880, lng: 72.3693 },
+            'bhuj': { lat: 23.2420, lng: 69.6669 },
+            'porbandar': { lat: 21.6417, lng: 69.6293 },
+            'palanpur': { lat: 24.1741, lng: 72.4331 },
+            'valsad': { lat: 20.5992, lng: 72.9342 },
+            'dwarka': { lat: 22.2442, lng: 68.9685 },
+            'somnath': { lat: 20.9060, lng: 70.3844 },
+
+            // Rajasthan Cities
+            'jodhpur': { lat: 26.2389, lng: 73.0243 },
+            'kota': { lat: 25.2138, lng: 75.8648 },
+            'bikaner': { lat: 28.0229, lng: 73.3119 },
+            'ajmer': { lat: 26.4499, lng: 74.6399 },
+            'udaipur': { lat: 24.5854, lng: 73.7125 },
+            'bhilwara': { lat: 25.3407, lng: 74.6318 },
+            'alwar': { lat: 27.5520, lng: 76.6346 },
+            'bharatpur': { lat: 27.2167, lng: 77.4895 },
+            'sikar': { lat: 27.6094, lng: 75.1399 },
+            'pali': { lat: 25.7713, lng: 73.3238 },
+            'tonk': { lat: 26.1664, lng: 75.7885 },
+            'kishangarh': { lat: 26.5885, lng: 74.8739 },
+            'hanumangarh': { lat: 29.5820, lng: 74.3294 },
+            'dholpur': { lat: 26.7025, lng: 77.8934 },
+            'gangapur city': { lat: 26.4831, lng: 76.7270 },
+            'sawai madhopur': { lat: 26.0235, lng: 76.3445 },
+            'chittorgarh': { lat: 24.8887, lng: 74.6269 },
+            'mount abu': { lat: 24.5925, lng: 72.7156 },
+            'pushkar': { lat: 26.4897, lng: 74.5511 },
+
+            // West Bengal Cities
+            'howrah': { lat: 22.5958, lng: 88.2636 },
+            'durgapur': { lat: 23.5204, lng: 87.3119 },
+            'asansol': { lat: 23.6739, lng: 86.9524 },
+            'siliguri': { lat: 26.7271, lng: 88.3953 },
+            'maheshtala': { lat: 22.5086, lng: 88.2500 },
+            'rajarhat gopalpur': { lat: 22.6321, lng: 88.4530 },
+            'south dumdum': { lat: 22.6052, lng: 88.3833 },
+            'rajarhat': { lat: 22.6321, lng: 88.4530 },
+            'bhatpara': { lat: 22.8664, lng: 88.4011 },
+            'panihati': { lat: 22.6900, lng: 88.3700 },
+            'kamarhati': { lat: 22.6726, lng: 88.3708 },
+            'bardhaman': { lat: 23.2324, lng: 87.8615 },
+            'kharagpur': { lat: 22.3460, lng: 87.2320 },
+            'haldia': { lat: 22.0667, lng: 88.0698 },
+            'darjeeling': { lat: 27.0360, lng: 88.2627 },
+
+            // Odisha Cities
+            'cuttack': { lat: 20.4625, lng: 85.8830 },
+            'rourkela': { lat: 22.2604, lng: 84.8536 },
+            'brahmapur': { lat: 19.3149, lng: 84.7941 },
+            'sambalpur': { lat: 21.4669, lng: 83.9756 },
+            'puri': { lat: 19.8135, lng: 85.8312 },
+            'balasore': { lat: 21.4927, lng: 86.9338 },
+            'bhadrak': { lat: 21.0524, lng: 86.5150 },
+            'baripada': { lat: 21.9322, lng: 86.7214 },
+            'jharsuguda': { lat: 21.8554, lng: 84.0060 },
+            'jeypore': { lat: 18.8606, lng: 82.5506 },
+
+            // Punjab Cities
+            'amritsar': { lat: 31.6340, lng: 74.8723 },
+            'jalandhar': { lat: 31.3260, lng: 75.5762 },
+            'patiala': { lat: 30.3398, lng: 76.3869 },
+            'bathinda': { lat: 30.2110, lng: 74.9455 },
+            'mohali': { lat: 30.7046, lng: 76.7179 },
+            'sahibzada ajit singh nagar': { lat: 30.7046, lng: 76.7179 },
+            'pathankot': { lat: 32.2643, lng: 75.6421 },
+            'hoshiarpur': { lat: 31.5143, lng: 75.9115 },
+            'moga': { lat: 30.8165, lng: 75.1717 },
+            'firozpur': { lat: 30.9331, lng: 74.6225 },
+            'kapurthala': { lat: 31.3851, lng: 75.3810 },
+
+            // Haryana Cities
+            'faridabad': { lat: 28.4089, lng: 77.3178 },
+            'gurgaon': { lat: 28.4595, lng: 77.0266 },
+            'gurugram': { lat: 28.4595, lng: 77.0266 },
+            'panipat': { lat: 29.3909, lng: 76.9635 },
+            'ambala': { lat: 30.3782, lng: 76.7767 },
+            'yamunanagar': { lat: 30.1290, lng: 77.2674 },
+            'rohtak': { lat: 28.8955, lng: 76.6066 },
+            'hisar': { lat: 29.1492, lng: 75.7217 },
+            'karnal': { lat: 29.6857, lng: 76.9905 },
+            'sonipat': { lat: 28.9931, lng: 77.0151 },
+            'panchkula': { lat: 30.6942, lng: 76.8606 },
+
+            // Uttarakhand Cities
+            'haridwar': { lat: 29.9457, lng: 78.1642 },
+            'roorkee': { lat: 29.8543, lng: 77.8880 },
+            'haldwani': { lat: 29.2183, lng: 79.5130 },
+            'rudrapur': { lat: 28.9875, lng: 79.4141 },
+            'kashipur': { lat: 29.2134, lng: 78.9569 },
+            'rishikesh': { lat: 30.0869, lng: 78.2676 },
+            'mussoorie': { lat: 30.4598, lng: 78.0644 },
+            'nainital': { lat: 29.3919, lng: 79.4542 },
+            'almora': { lat: 29.5892, lng: 79.6467 },
+
+            // Himachal Pradesh Cities
+            'shimla': { lat: 31.1048, lng: 77.1734 },
+            'mandi': { lat: 31.7089, lng: 76.9320 },
+            'solan': { lat: 30.9045, lng: 77.0967 },
+            'dharamshala': { lat: 32.2190, lng: 76.3234 },
+            'palampur': { lat: 32.1150, lng: 76.5431 },
+            'baddi': { lat: 30.9578, lng: 76.7920 },
+            'nahan': { lat: 30.5600, lng: 77.3000 },
+            'una': { lat: 31.4685, lng: 76.2708 },
+            'kullu': { lat: 31.9579, lng: 77.1095 },
+            'manali': { lat: 32.2432, lng: 77.1892 },
+
+            // Jharkhand Cities
+            'jamshedpur': { lat: 22.8046, lng: 86.2029 },
+            'dhanbad': { lat: 23.7957, lng: 86.4304 },
+            'bokaro': { lat: 23.6693, lng: 86.1511 },
+            'deoghar': { lat: 24.4763, lng: 86.6917 },
+            'hazaribagh': { lat: 23.9924, lng: 85.3632 },
+            'giridih': { lat: 24.1911, lng: 86.3126 },
+
+            // Chhattisgarh Cities
+            'raipur': { lat: 21.2514, lng: 81.6296 },
+            'bhilai': { lat: 21.1938, lng: 81.3509 },
+            'korba': { lat: 22.3595, lng: 82.7501 },
+            'bilaspur': { lat: 22.0797, lng: 82.1409 },
+            'durg': { lat: 21.1904, lng: 81.2849 },
+            'rajnandgaon': { lat: 21.0971, lng: 81.0300 },
+
+            // Assam Cities
+            'dispur': { lat: 26.1433, lng: 91.7898 },
+            'dibrugarh': { lat: 27.4728, lng: 94.9120 },
+            'jorhat': { lat: 26.7465, lng: 94.2026 },
+            'nagaon': { lat: 26.3464, lng: 92.6840 },
+            'silchar': { lat: 24.8333, lng: 92.7789 },
+            'tezpur': { lat: 26.6338, lng: 92.8000 },
+
+            // Bihar Cities
+            'gaya': { lat: 24.7955, lng: 84.9994 },
+            'bhagalpur': { lat: 25.2425, lng: 86.9842 },
+            'muzaffarpur': { lat: 26.1209, lng: 85.3647 },
+            'darbhanga': { lat: 26.1542, lng: 85.8918 },
+            'arrah': { lat: 25.5560, lng: 84.6603 },
+            'begusarai': { lat: 25.4165, lng: 86.1275 },
+            'katihar': { lat: 25.5541, lng: 87.5594 },
+            'chapra': { lat: 25.7800, lng: 84.7300 },
+
+            // Madhya Pradesh Cities
+            'gwalior': { lat: 26.2183, lng: 78.1828 },
+            'jabalpur': { lat: 23.1815, lng: 79.9864 },
+            'ujjain': { lat: 23.1765, lng: 75.7885 },
+            'sagar': { lat: 23.8388, lng: 78.7378 },
+            'dewas': { lat: 22.9676, lng: 76.0534 },
+            'satna': { lat: 24.6005, lng: 80.8322 },
+            'ratlam': { lat: 23.3315, lng: 75.0376 },
+            'rewa': { lat: 24.5362, lng: 81.3037 },
+            'katni': { lat: 23.8343, lng: 80.3899 },
+            'singrauli': { lat: 24.1994, lng: 82.6753 },
+            'khajuraho': { lat: 24.8318, lng: 79.9199 },
+            'orchha': { lat: 25.1528, lng: 78.6405 },
+
+            // Brazil
+            'sao paulo': { lat: -23.5505, lng: -46.6333 },
+            'rio de janeiro': { lat: -22.9068, lng: -43.1729 },
+            'brasilia': { lat: -15.7975, lng: -47.8919 },
+            'salvador': { lat: -12.9777, lng: -38.5016 },
+            'fortaleza': { lat: -3.7327, lng: -38.5270 },
+            'belo horizonte': { lat: -19.9167, lng: -43.9345 },
+            'manaus': { lat: -3.1190, lng: -60.0217 },
+            'curitiba': { lat: -25.4290, lng: -49.2671 },
+            'recife': { lat: -8.0476, lng: -34.8770 },
+            'porto alegre': { lat: -30.0346, lng: -51.2177 },
+
+            // Mexico
+            'mexico city': { lat: 19.4326, lng: -99.1332 },
+            'guadalajara': { lat: 20.6597, lng: -103.3496 },
+            'monterrey': { lat: 25.6866, lng: -100.3161 },
+            'puebla': { lat: 19.0414, lng: -98.2063 },
+            'tijuana': { lat: 32.5149, lng: -117.0382 },
+            'leon': { lat: 21.1250, lng: -101.6859 },
+            'juarez': { lat: 31.6904, lng: -106.4245 },
+            'cancun': { lat: 21.1619, lng: -86.8515 },
+
+            // Russia
+            'moscow': { lat: 55.7558, lng: 37.6173 },
+            'st petersburg': { lat: 59.9311, lng: 30.3609 },
+            'novosibirsk': { lat: 55.0084, lng: 82.9357 },
+            'yekaterinburg': { lat: 56.8389, lng: 60.6057 },
+            'nizhny novgorod': { lat: 56.3269, lng: 44.0059 },
+            'kazan': { lat: 55.8304, lng: 49.0661 },
+            'chelyabinsk': { lat: 55.1644, lng: 61.4368 },
+            'samara': { lat: 53.2415, lng: 50.2212 },
+            'omsk': { lat: 54.9885, lng: 73.3242 },
+            'rostov on don': { lat: 47.2357, lng: 39.7015 },
+
+            // South Korea
+            'seoul': { lat: 37.5665, lng: 126.9780 },
+            'busan': { lat: 35.1796, lng: 129.0756 },
+            'incheon': { lat: 37.4563, lng: 126.7052 },
+            'daegu': { lat: 35.8714, lng: 128.6014 },
+            'daejeon': { lat: 36.3504, lng: 127.3845 },
+            'gwangju': { lat: 35.1595, lng: 126.8526 },
+            'ulsan': { lat: 35.5384, lng: 129.3114 },
+
+            // Netherlands
+            'amsterdam': { lat: 52.3676, lng: 4.9041 },
+            'rotterdam': { lat: 51.9244, lng: 4.4777 },
+            'the hague': { lat: 52.0705, lng: 4.3007 },
+            'utrecht': { lat: 52.0907, lng: 5.1214 },
+            'eindhoven': { lat: 51.4416, lng: 5.4697 },
+
+            // Switzerland
+            'zurich': { lat: 47.3769, lng: 8.5417 },
+            'geneva': { lat: 46.2044, lng: 6.1432 },
+            'basel': { lat: 47.5596, lng: 7.5886 },
+            'bern': { lat: 46.9480, lng: 7.4474 },
+            'lausanne': { lat: 46.5197, lng: 6.6323 },
+
+            // Sweden
+            'stockholm': { lat: 59.3293, lng: 18.0686 },
+            'gothenburg': { lat: 57.7089, lng: 11.9746 },
+            'malmo': { lat: 55.6050, lng: 13.0038 },
+            'uppsala': { lat: 59.8586, lng: 17.6389 },
+
+            // Norway
+            'oslo': { lat: 59.9139, lng: 10.7522 },
+            'bergen': { lat: 60.3913, lng: 5.3221 },
+            'trondheim': { lat: 63.4305, lng: 10.3951 },
+            'stavanger': { lat: 58.9700, lng: 5.7331 },
+
+            // Denmark
+            'copenhagen': { lat: 55.6761, lng: 12.5683 },
+            'aarhus': { lat: 56.1629, lng: 10.2039 },
+            'odense': { lat: 55.4038, lng: 10.4024 },
+
+            // Finland
+            'helsinki': { lat: 60.1699, lng: 24.9384 },
+            'espoo': { lat: 60.2055, lng: 24.6559 },
+            'tampere': { lat: 61.4978, lng: 23.7610 },
+
+            // Poland
+            'warsaw': { lat: 52.2297, lng: 21.0122 },
+            'krakow': { lat: 50.0647, lng: 19.9450 },
+            'lodz': { lat: 51.7592, lng: 19.4560 },
+            'wroclaw': { lat: 51.1079, lng: 17.0385 },
+            'poznan': { lat: 52.4064, lng: 16.9252 },
+            'gdansk': { lat: 54.3520, lng: 18.6466 },
+
+            // Czech Republic
+            'prague': { lat: 50.0755, lng: 14.4378 },
+            'brno': { lat: 49.1951, lng: 16.6068 },
+            'ostrava': { lat: 49.8209, lng: 18.2625 },
+
+            // Austria
+            'vienna': { lat: 48.2082, lng: 16.3738 },
+            'graz': { lat: 47.0707, lng: 15.4395 },
+            'linz': { lat: 48.3069, lng: 14.2858 },
+            'salzburg': { lat: 47.8095, lng: 13.0550 },
+
+            // Hungary
+            'budapest': { lat: 47.4979, lng: 19.0402 },
+            'debrecen': { lat: 47.5316, lng: 21.6273 },
+            'szeged': { lat: 46.2530, lng: 20.1414 },
+
+            // Portugal
+            'lisbon': { lat: 38.7223, lng: -9.1393 },
+            'porto': { lat: 41.1579, lng: -8.6291 },
+            'braga': { lat: 41.5454, lng: -8.4265 },
+            'faro': { lat: 37.0194, lng: -7.9322 },
+
+            // Greece
+            'athens': { lat: 37.9838, lng: 23.7275 },
+            'thessaloniki': { lat: 40.6401, lng: 22.9444 },
+            'patras': { lat: 38.2466, lng: 21.7346 },
+            'heraklion': { lat: 35.3387, lng: 25.1442 },
+
+            // Turkey
+            'istanbul': { lat: 41.0082, lng: 28.9784 },
+            'ankara': { lat: 39.9334, lng: 32.8597 },
+            'izmir': { lat: 38.4237, lng: 27.1428 },
+            'bursa': { lat: 40.1885, lng: 29.0610 },
+            'antalya': { lat: 36.8969, lng: 30.7133 },
+
+            // UAE
+            'dubai': { lat: 25.2048, lng: 55.2708 },
+            'abu dhabi': { lat: 24.4539, lng: 54.3773 },
+            'sharjah': { lat: 25.3463, lng: 55.4209 },
+
+            // Saudi Arabia
+            'riyadh': { lat: 24.7136, lng: 46.6753 },
+            'jeddah': { lat: 21.4858, lng: 39.1925 },
+            'mecca': { lat: 21.3891, lng: 39.8579 },
+            'medina': { lat: 24.5247, lng: 39.5692 },
+            'dammam': { lat: 26.3927, lng: 50.0916 },
+
+            // Egypt
+            'cairo': { lat: 30.0444, lng: 31.2357 },
+            'alexandria': { lat: 31.2001, lng: 29.9187 },
+            'giza': { lat: 30.0131, lng: 31.2089 },
+            'sharm el sheikh': { lat: 27.9158, lng: 34.3300 },
+
+            // South Africa
+            'johannesburg': { lat: -26.2041, lng: 28.0473 },
+            'cape town': { lat: -33.9249, lng: 18.4241 },
+            'durban': { lat: -29.8587, lng: 31.0218 },
+            'pretoria': { lat: -25.7479, lng: 28.2293 },
+            'port elizabeth': { lat: -33.9608, lng: 25.6022 },
+
+            // Nigeria
+            'lagos': { lat: 6.5244, lng: 3.3792 },
+            'abuja': { lat: 9.0765, lng: 7.3986 },
+            'kano': { lat: 12.0022, lng: 8.5920 },
+            'ibadan': { lat: 7.3775, lng: 3.9470 },
+
+            // Kenya
+            'nairobi': { lat: -1.2921, lng: 36.8219 },
+            'mombasa': { lat: -4.0435, lng: 39.6682 },
+            'kisumu': { lat: -0.0917, lng: 34.7680 },
+
+            // Thailand
+            'bangkok': { lat: 13.7563, lng: 100.5018 },
+            'chiang mai': { lat: 18.7883, lng: 98.9853 },
+            'phuket': { lat: 7.8804, lng: 98.3923 },
+            'pattaya': { lat: 12.9236, lng: 100.8825 },
+
+            // Singapore
+            'singapore': { lat: 1.3521, lng: 103.8198 },
+
+            // Malaysia
+            'kuala lumpur': { lat: 3.1390, lng: 101.6869 },
+            'george town': { lat: 5.4141, lng: 100.3288 },
+            'johor bahru': { lat: 1.4927, lng: 103.7414 },
+
+            // Indonesia
+            'jakarta': { lat: -6.2088, lng: 106.8456 },
+            'surabaya': { lat: -7.2575, lng: 112.7521 },
+            'bandung': { lat: -6.9175, lng: 107.6191 },
+            'medan': { lat: 3.5952, lng: 98.6722 },
+            'bali': { lat: -8.3405, lng: 115.0920 },
+
+            // Philippines
+            'manila': { lat: 14.5995, lng: 120.9842 },
+            'quezon city': { lat: 14.6760, lng: 121.0437 },
+            'cebu city': { lat: 10.3157, lng: 123.8854 },
+            'davao city': { lat: 7.1907, lng: 125.4553 },
+
+            // Vietnam
+            'ho chi minh city': { lat: 10.8231, lng: 106.6297 },
+            'hanoi': { lat: 21.0278, lng: 105.8342 },
+            'da nang': { lat: 16.0544, lng: 108.2022 },
+            'nha trang': { lat: 12.2388, lng: 109.1967 },
+
+            // Argentina
+            'buenos aires': { lat: -34.6037, lng: -58.3816 },
+            'cordoba': { lat: -31.4201, lng: -64.1888 },
+            'rosario': { lat: -32.9442, lng: -60.6505 },
+            'mendoza': { lat: -32.8895, lng: -68.8458 },
+
+            // Chile
+            'santiago': { lat: -33.4489, lng: -70.6693 },
+            'valparaiso': { lat: -33.0472, lng: -71.6127 },
+            'concepcion': { lat: -36.8201, lng: -73.0444 },
+
+            // Colombia
+            'bogota': { lat: 4.7110, lng: -74.0721 },
+            'medellin': { lat: 6.2476, lng: -75.5658 },
+            'cali': { lat: 3.4516, lng: -76.5320 },
+            'cartagena': { lat: 10.3910, lng: -75.4794 },
+
+            // Peru
+            'lima': { lat: -12.0464, lng: -77.0428 },
+            'arequipa': { lat: -16.4090, lng: -71.5375 },
+            'cusco': { lat: -13.1631, lng: -72.5450 },
+            'trujillo': { lat: -8.1060, lng: -79.0330 },
+
+            // New Zealand
+            'auckland': { lat: -36.8485, lng: 174.7633 },
+            'wellington': { lat: -41.2865, lng: 174.7762 },
+            'christchurch': { lat: -43.5321, lng: 172.6362 },
+            'queenstown': { lat: -45.0312, lng: 168.6626 },
+
+            // Israel
+            'tel aviv': { lat: 32.0853, lng: 34.7818 },
+            'jerusalem': { lat: 31.7683, lng: 35.2137 },
+            'haifa': { lat: 32.7940, lng: 34.9896 },
+
+            // Pakistan
+            'karachi': { lat: 24.8607, lng: 67.0011 },
+            'lahore': { lat: 31.5204, lng: 74.3587 },
+            'islamabad': { lat: 33.6844, lng: 73.0479 },
+            'faisalabad': { lat: 31.4187, lng: 73.0791 },
+
+            // Bangladesh
+            'dhaka': { lat: 23.8103, lng: 90.4125 },
+            'chittagong': { lat: 22.3569, lng: 91.7832 },
+            'khulna': { lat: 22.8456, lng: 89.5403 },
+
+            // Ukraine
+            'kyiv': { lat: 50.4501, lng: 30.5234 },
+            'kharkiv': { lat: 49.9935, lng: 36.2304 },
+            'odesa': { lat: 46.4825, lng: 30.7233 },
+            'dnipro': { lat: 48.4647, lng: 35.0462 },
+
+            // Romania
+            'bucharest': { lat: 44.4268, lng: 26.1025 },
+            'cluj napoca': { lat: 46.7712, lng: 23.6236 },
+            'timisoara': { lat: 45.7489, lng: 21.2087 },
+            'iasi': { lat: 47.1585, lng: 27.6014 },
+
+            // Bulgaria
+            'sofia': { lat: 42.6977, lng: 23.3219 },
+            'plovdiv': { lat: 42.1354, lng: 24.7453 },
+            'varna': { lat: 43.2141, lng: 27.9147 },
+
+            // Croatia
+            'zagreb': { lat: 45.8150, lng: 15.9819 },
+            'split': { lat: 43.5081, lng: 16.4402 },
+            'dubrovnik': { lat: 42.6507, lng: 18.0944 },
+
+            // Serbia
+            'belgrade': { lat: 44.7866, lng: 20.4489 },
+            'novi sad': { lat: 45.2671, lng: 19.8335 },
+
+            // Ireland
+            'dublin': { lat: 53.3498, lng: -6.2603 },
+            'cork': { lat: 51.8985, lng: -8.4756 },
+            'galway': { lat: 53.2707, lng: -9.0568 },
+
+            // Belgium
+            'brussels': { lat: 50.8503, lng: 4.3517 },
+            'antwerp': { lat: 51.2194, lng: 4.4025 },
+            'ghent': { lat: 51.0543, lng: 3.7174 },
+            'bruges': { lat: 51.2093, lng: 3.2247 },
+
+            // Luxembourg
+            'luxembourg': { lat: 49.6116, lng: 6.1319 },
+
+            // Iceland
+            'reykjavik': { lat: 64.1466, lng: -21.9426 },
+
+            // Estonia
+            'tallinn': { lat: 59.4370, lng: 24.7536 },
+
+            // Latvia
+            'riga': { lat: 56.9496, lng: 24.1052 },
+
+            // Lithuania
+            'vilnius': { lat: 54.6872, lng: 25.2797 },
+
+            // Slovenia
+            'ljubljana': { lat: 46.0569, lng: 14.5058 },
+
+            // Slovakia
+            'bratislava': { lat: 48.1486, lng: 17.1077 },
+
+            // Qatar
+            'doha': { lat: 25.2854, lng: 51.5310 },
+
+            // Kuwait
+            'kuwait city': { lat: 29.3759, lng: 47.9774 },
+
+            // Oman
+            'muscat': { lat: 23.5859, lng: 58.4059 },
+
+            // Bahrain
+            'manama': { lat: 26.2285, lng: 50.5860 },
+
+            // Jordan
+            'amman': { lat: 31.9454, lng: 35.9284 },
+
+            // Lebanon
+            'beirut': { lat: 33.8938, lng: 35.5018 },
+
+            // Morocco
+            'casablanca': { lat: 33.5731, lng: -7.5898 },
+            'marrakech': { lat: 31.6295, lng: -7.9811 },
+            'rabat': { lat: 34.0209, lng: -6.8416 },
+            'fes': { lat: 34.0181, lng: -5.0078 },
+
+            // Tunisia
+            'tunis': { lat: 36.8065, lng: 10.1815 },
+
+            // Algeria
+            'algiers': { lat: 36.7538, lng: 3.0588 },
+
+            // Ethiopia
+            'addis ababa': { lat: 9.1450, lng: 40.4897 },
+
+            // Ghana
+            'accra': { lat: 5.6037, lng: -0.1870 },
+
+            // Tanzania
+            'dar es salaam': { lat: -6.7924, lng: 39.2083 },
+
+            // Uganda
+            'kampala': { lat: 0.3476, lng: 32.5825 },
+
+            // Zambia
+            'lusaka': { lat: -15.3875, lng: 28.3228 },
+
+            // Zimbabwe
+            'harare': { lat: -17.8252, lng: 31.0335 },
+
+            // Sri Lanka
+            'colombo': { lat: 6.9271, lng: 79.8612 },
+
+            // Nepal
+            'kathmandu': { lat: 27.7172, lng: 85.3240 },
+
+            // Myanmar
+            'yangon': { lat: 16.8661, lng: 96.1951 },
+
+            // Cambodia
+            'phnom penh': { lat: 11.5564, lng: 104.9282 },
+
+            // Laos
+            'vientiane': { lat: 17.9757, lng: 102.6331 },
+
+            // Mongolia
+            'ulaanbaatar': { lat: 47.8864, lng: 106.9057 },
+
+            // Kazakhstan
+            'almaty': { lat: 43.2220, lng: 76.8512 },
+            'astana': { lat: 51.1605, lng: 71.4704 },
+
+            // Uzbekistan
+            'tashkent': { lat: 41.2995, lng: 69.2401 },
+
+            // Azerbaijan
+            'baku': { lat: 40.4093, lng: 49.8671 },
+
+            // Georgia
+            'tbilisi': { lat: 41.7151, lng: 44.8271 },
+
+            // Armenia
+            'yerevan': { lat: 40.1792, lng: 44.4991 },
+
+            // Belarus
+            'minsk': { lat: 53.9045, lng: 27.5615 },
+
+            // Moldova
+            'chisinau': { lat: 47.0105, lng: 28.8638 },
+
+            // Venezuela
+            'caracas': { lat: 10.4806, lng: -66.9036 },
+
+            // Ecuador
+            'quito': { lat: -0.1807, lng: -78.4678 },
+            'guayaquil': { lat: -2.1894, lng: -79.8891 },
+
+            // Uruguay
+            'montevideo': { lat: -34.9011, lng: -56.1645 },
+
+            // Paraguay
+            'asuncion': { lat: -25.2637, lng: -57.5759 },
+
+            // Bolivia
+            'la paz': { lat: -16.5000, lng: -68.1500 },
+            'santa cruz': { lat: -17.8146, lng: -63.1561 },
+
+            // Guatemala
+            'guatemala city': { lat: 14.6349, lng: -90.5069 },
+
+            // Costa Rica
+            'san jose': { lat: 9.9281, lng: -84.0907 },
+
+            // Panama
+            'panama city': { lat: 8.9824, lng: -79.5199 },
+
+            // Honduras
+            'tegucigalpa': { lat: 14.0723, lng: -87.1921 },
+
+            // El Salvador
+            'san salvador': { lat: 13.6929, lng: -89.2182 },
+
+            // Nicaragua
+            'managua': { lat: 12.1140, lng: -86.2362 },
+
+            // Cuba
+            'havana': { lat: 23.1136, lng: -82.3666 },
+
+            // Dominican Republic
+            'santo domingo': { lat: 18.4861, lng: -69.9312 },
+
+            // Jamaica
+            'kingston': { lat: 17.9712, lng: -76.7926 },
+
+            // Trinidad and Tobago
+            'port of spain': { lat: 10.6549, lng: -61.5019 },
+
+            // Puerto Rico
+            'san juan': { lat: 18.4655, lng: -66.1057 }
+        };
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([39.8283, -98.5795], 4);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add danger zones
+            addDangerZones();
+        }
+
+        // Add danger zones to map
+        function addDangerZones() {
+            DANGER_ZONES.forEach(zone => {
+                const circle = L.circle([zone.lat, zone.lng], {
+                    color: '#ef4444',
+                    fillColor: '#ef4444',
+                    fillOpacity: 0.2,
+                    radius: zone.radius
+                }).addTo(map);
+                
+                circle.bindPopup(`<b>${zone.name}</b><br>High Risk Area`);
+                dangerZones.push(circle);
+            });
+        }
+
+        // Geocode location name to coordinates
+        function geocodeLocation(location) {
+            const normalized = location.toLowerCase().trim();
+            
+            // Check city database
+            for (let city in CITY_COORDS) {
+                if (normalized.includes(city)) {
+                    return CITY_COORDS[city];
+                }
+            }
+
+            // Try to parse as "lat, lng"
+            const coords = normalized.split(',').map(s => parseFloat(s.trim()));
+            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                return { lat: coords[0], lng: coords[1] };
+            }
+
+            // Default fallback - random offset from center of US
+            return {
+                lat: 39.8283 + (Math.random() - 0.5) * 10,
+                lng: -98.5795 + (Math.random() - 0.5) * 20
+            };
+        }
+
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(p1, p2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (p2.lat - p1.lat) * Math.PI / 180;
+            const dLon = (p2.lng - p1.lng) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Check if point is near danger zone
+        function isNearDangerZone(point) {
+            for (let zone of DANGER_ZONES) {
+                const distance = calculateDistance(point, zone);
+                if (distance < zone.radius / 1000) { // Convert radius to km
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Generate route points with realistic road-following behavior
+        function generateRoutePoints(source, dest, deviation, numPoints = 30) {
+            const points = [source];
+            
+            // Calculate total distance
+            const totalLat = dest.lat - source.lat;
+            const totalLng = dest.lng - source.lng;
+            
+            // Create intermediate waypoints that follow realistic road patterns
+            for (let i = 1; i < numPoints; i++) {
+                const t = i / numPoints;
+                
+                // Base position along direct line
+                let lat = source.lat + totalLat * t;
+                let lng = source.lng + totalLng * t;
+                
+                // Add realistic road deviation using multiple sine waves
+                // This creates more natural curved paths that follow terrain
+                const deviationFactor = Math.sin(t * Math.PI) * deviation;
+                
+                // Add perpendicular offset with some randomness for realism
+                const perpAngle = Math.atan2(totalLng, totalLat) + Math.PI / 2;
+                const randomOffset = (Math.random() - 0.5) * deviation * 0.3;
+                
+                lat += Math.cos(perpAngle) * (deviationFactor + randomOffset);
+                lng += Math.sin(perpAngle) * (deviationFactor + randomOffset);
+                
+                // Add some "road following" noise - small variations that simulate following roads
+                const roadNoise = Math.sin(t * Math.PI * 3) * deviation * 0.2;
+                lat += Math.cos(perpAngle) * roadNoise;
+                lng += Math.sin(perpAngle) * roadNoise;
+                
+                points.push({ lat, lng });
+            }
+            
+            points.push(dest);
+            return points;
+        }
+
+        // Check if a point is over water (more precise for coastal India)
+        function isPointOverWater(lat, lng) {
+            // Bay of Bengal - East coast of India
+            if (lng > 80 && lng < 92) {
+                // Chennai coastal area - water is east of the city
+                if (lat > 10 && lat < 14) {
+                    // Chennai is around 13.08N, 80.27E - water is to the east
+                    if (lng > 80.5) return true;
+                }
+                // General Bay of Bengal
+                if (lat > 5 && lat < 25 && lng > 82) return true;
+            }
+            
+            // Arabian Sea - West coast of India
+            if (lng > 68 && lng < 75) {
+                if (lat > 6 && lat < 25) return true;
+            }
+            
+            // Indian Ocean - South of India
+            if (lat < 8 && lat > -10) {
+                if (lng > 70 && lng < 95) return true;
+            }
+            
+            // Palk Strait and Gulf of Mannar (between India and Sri Lanka)
+            if (lat > 6 && lat < 10 && lng > 78 && lng < 80.5) return true;
+            
+            // Major world water bodies
+            // Pacific Ocean
+            if ((lng > 120 && lng <= 180) || (lng >= -180 && lng < -100)) {
+                if (lat > -60 && lat < 60) return true;
+            }
+            
+            // Atlantic Ocean
+            if (lng > -80 && lng < 20) {
+                if (lat > -60 && lat < 60) return true;
+            }
+            
+            // Mediterranean Sea
+            if (lat > 30 && lat < 47 && lng > -5 && lng < 40) return true;
+            
+            return false;
+        }
+
+        // Check if a route segment crosses major water bodies
+        function isOverWater(p1, p2) {
+            // Check multiple points along the segment
+            const steps = 5;
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const lat = p1.lat + (p2.lat - p1.lat) * t;
+                const lng = p1.lng + (p2.lng - p1.lng) * t;
+                if (isPointOverWater(lat, lng)) return true;
+            }
+            return false;
+        }
+
+        // Get land-based waypoints for major routes
+        function getLandWaypoints(source, dest) {
+            const waypoints = [];
+            
+            // Define major land waypoints for Indian routes
+            const indianWaypoints = {
+                // Chennai connections - route inland then to destination
+                'chennai-bangalore': [
+                    { lat: 13.08, lng: 80.27 }, // Chennai
+                    { lat: 12.80, lng: 79.50 }, // Inland
+                    { lat: 12.50, lng: 78.50 }, // Toward Bangalore
+                    { lat: 12.97, lng: 77.59 }  // Bangalore
+                ],
+                'chennai-coimbatore': [
+                    { lat: 13.08, lng: 80.27 }, // Chennai
+                    { lat: 12.50, lng: 79.50 }, // Inland
+                    { lat: 11.80, lng: 78.00 }, // Salem area
+                    { lat: 11.00, lng: 77.00 }, // Erode area
+                    { lat: 11.01, lng: 76.95 }  // Coimbatore
+                ],
+                'chennai-madurai': [
+                    { lat: 13.08, lng: 80.27 }, // Chennai
+                    { lat: 12.00, lng: 79.50 }, // Inland
+                    { lat: 11.00, lng: 78.50 }, // Trichy area
+                    { lat: 10.00, lng: 78.50 }, // Toward Madurai
+                    { lat: 9.92, lng: 78.11 }   // Madurai
+                ],
+                'chennai-kochi': [
+                    { lat: 13.08, lng: 80.27 }, // Chennai
+                    { lat: 12.00, lng: 79.00 }, // Inland
+                    { lat: 11.00, lng: 77.50 }, // Coimbatore area
+                    { lat: 10.50, lng: 77.00 }, // Palakkad gap
+                    { lat: 10.00, lng: 76.50 }, // Toward Kochi
+                    { lat: 9.93, lng: 76.26 }   // Kochi
+                ],
+                'chennai-hyderabad': [
+                    { lat: 13.08, lng: 80.27 }, // Chennai
+                    { lat: 13.00, lng: 79.00 }, // Inland
+                    { lat: 14.00, lng: 78.00 }, // Kadapa area
+                    { lat: 15.50, lng: 78.50 }, // Kurnool area
+                    { lat: 17.38, lng: 78.48 }  // Hyderabad
+                ],
+                'chennai-mumbai': [
+                    { lat: 13.08, lng: 80.27 }, // Chennai
+                    { lat: 13.00, lng: 78.00 }, // Inland
+                    { lat: 15.00, lng: 76.00 }, // Karnataka
+                    { lat: 17.00, lng: 75.00 }, // Maharashtra border
+                    { lat: 19.07, lng: 72.87 }  // Mumbai
+                ],
+                // Bangalore connections
+                'bangalore-chennai': [
+                    { lat: 12.97, lng: 77.59 }, // Bangalore
+                    { lat: 12.50, lng: 78.50 }, // Hosur/Krishnagiri
+                    { lat: 12.00, lng: 79.00 }, // Vellore
+                    { lat: 13.08, lng: 80.27 }  // Chennai
+                ],
+                'bangalore-hyderabad': [
+                    { lat: 12.97, lng: 77.59 }, // Bangalore
+                    { lat: 14.00, lng: 77.00 }, // Anantapur
+                    { lat: 16.00, lng: 77.50 }, // Raichur
+                    { lat: 17.38, lng: 78.48 }  // Hyderabad
+                ],
+                'bangalore-mumbai': [
+                    { lat: 12.97, lng: 77.59 }, // Bangalore
+                    { lat: 14.00, lng: 75.00 }, // Hubli
+                    { lat: 16.00, lng: 74.00 }, // Belgaum
+                    { lat: 18.00, lng: 73.50 }, // Pune direction
+                    { lat: 19.07, lng: 72.87 }  // Mumbai
+                ],
+                'bangalore-kochi': [
+                    { lat: 12.97, lng: 77.59 }, // Bangalore
+                    { lat: 12.00, lng: 77.00 }, // Mysore
+                    { lat: 11.50, lng: 76.50 }, // Wayanad
+                    { lat: 10.50, lng: 76.50 }, // Palakkad
+                    { lat: 9.93, lng: 76.26 }   // Kochi
+                ],
+                // Coimbatore connections
+                'coimbatore-chennai': [
+                    { lat: 11.01, lng: 76.95 }, // Coimbatore
+                    { lat: 11.50, lng: 77.50 }, // Tiruppur
+                    { lat: 11.66, lng: 78.14 }, // Salem
+                    { lat: 12.50, lng: 79.00 }, // Vellore
+                    { lat: 13.08, lng: 80.27 }  // Chennai
+                ],
+                'salem-chennai': [
+                    { lat: 11.66, lng: 78.14 }, // Salem
+                    { lat: 12.00, lng: 78.80 }, // Dharmapuri
+                    { lat: 12.50, lng: 79.00 }, // Vellore
+                    { lat: 13.08, lng: 80.27 }  // Chennai
+                ],
+                'salem-coimbatore': [
+                    { lat: 11.66, lng: 78.14 }, // Salem
+                    { lat: 11.30, lng: 77.60 }, // Erode
+                    { lat: 11.01, lng: 76.95 }  // Coimbatore
+                ],
+                'madurai-chennai': [
+                    { lat: 9.92, lng: 78.11 },  // Madurai
+                    { lat: 10.50, lng: 78.50 }, // Trichy
+                    { lat: 11.50, lng: 78.50 }, // Salem area
+                    { lat: 12.50, lng: 79.00 }, // Vellore
+                    { lat: 13.08, lng: 80.27 }  // Chennai
+                ],
+                // Kerala routes
+                'kochi-chennai': [
+                    { lat: 9.93, lng: 76.26 },  // Kochi
+                    { lat: 10.50, lng: 76.50 }, // Palakkad
+                    { lat: 11.00, lng: 77.00 }, // Coimbatore
+                    { lat: 12.00, lng: 78.50 }, // Salem
+                    { lat: 13.08, lng: 80.27 }  // Chennai
+                ],
+                'trivandrum-kochi': [
+                    { lat: 8.52, lng: 76.93 },  // Trivandrum
+                    { lat: 9.00, lng: 76.60 },  // Kollam
+                    { lat: 9.50, lng: 76.50 },  // Alappuzha
+                    { lat: 9.93, lng: 76.26 }   // Kochi
+                ],
+                // Mumbai connections
+                'mumbai-pune': [
+                    { lat: 19.07, lng: 72.87 }, // Mumbai
+                    { lat: 18.50, lng: 73.50 }, // Lonavala
+                    { lat: 18.52, lng: 73.85 }  // Pune
+                ],
+                'mumbai-delhi': [
+                    { lat: 19.07, lng: 72.87 }, // Mumbai
+                    { lat: 20.00, lng: 74.00 }, // Nashik
+                    { lat: 22.00, lng: 75.00 }, // Indore
+                    { lat: 24.00, lng: 75.00 }, // Kota
+                    { lat: 26.00, lng: 76.00 }, // Jaipur
+                    { lat: 28.61, lng: 77.20 }  // Delhi
+                ],
+                // Delhi connections
+                'delhi-jaipur': [
+                    { lat: 28.61, lng: 77.20 }, // Delhi
+                    { lat: 27.80, lng: 76.80 }, // Alwar
+                    { lat: 26.91, lng: 75.78 }  // Jaipur
+                ],
+                'delhi-agra': [
+                    { lat: 28.61, lng: 77.20 }, // Delhi
+                    { lat: 28.00, lng: 77.50 }, // Mathura
+                    { lat: 27.17, lng: 78.01 }  // Agra
+                ],
+                'delhi-amritsar': [
+                    { lat: 28.61, lng: 77.20 }, // Delhi
+                    { lat: 29.00, lng: 76.50 }, // Panipat
+                    { lat: 30.00, lng: 76.50 }, // Ambala
+                    { lat: 31.63, lng: 74.87 }  // Amritsar
+                ],
+                // Hyderabad connections
+                'hyderabad-chennai': [
+                    { lat: 17.38, lng: 78.48 }, // Hyderabad
+                    { lat: 16.00, lng: 79.00 }, // Nalgonda
+                    { lat: 15.00, lng: 79.50 }, // Ongole
+                    { lat: 14.00, lng: 80.00 }, // Nellore
+                    { lat: 13.08, lng: 80.27 }  // Chennai
+                ],
+                'hyderabad-vijayawada': [
+                    { lat: 17.38, lng: 78.48 }, // Hyderabad
+                    { lat: 17.00, lng: 79.50 }, // Suryapet
+                    { lat: 16.50, lng: 80.50 }, // Nandigama
+                    { lat: 16.50, lng: 80.64 }  // Vijayawada
+                ],
+                // Kolkata connections
+                'kolkata-siliguri': [
+                    { lat: 22.57, lng: 88.36 }, // Kolkata
+                    { lat: 23.50, lng: 88.00 }, // Bardhaman
+                    { lat: 24.50, lng: 88.00 }, // Malda
+                    { lat: 26.72, lng: 88.39 }  // Siliguri
+                ]
+            };
+            
+            // Try to find matching route
+            const routeKey1 = `${source.name}-${dest.name}`;
+            const routeKey2 = `${dest.name}-${source.name}`;
+            
+            if (indianWaypoints[routeKey1]) {
+                return indianWaypoints[routeKey1];
+            }
+            if (indianWaypoints[routeKey2]) {
+                // Reverse the waypoints
+                return [...indianWaypoints[routeKey2]].reverse();
+            }
+            
+            return null;
+        }
+
+        // Generate land-following route that avoids water bodies
+        function generateLandRoute(source, dest, safetyLevel) {
+            // Try to get predefined waypoints for known routes
+            const sourceName = Object.keys(CITY_COORDS).find(key => {
+                const city = CITY_COORDS[key];
+                return Math.abs(city.lat - source.lat) < 0.5 && Math.abs(city.lng - source.lng) < 0.5;
+            });
+            const destName = Object.keys(CITY_COORDS).find(key => {
+                const city = CITY_COORDS[key];
+                return Math.abs(city.lat - dest.lat) < 0.5 && Math.abs(city.lng - dest.lng) < 0.5;
+            });
+            
+            // If we have predefined waypoints, use them
+            if (sourceName && destName) {
+                const waypoints = getLandWaypoints(
+                    { name: sourceName, ...source },
+                    { name: destName, ...dest }
+                );
+                if (waypoints) {
+                    return interpolateWaypoints(waypoints, safetyLevel);
+                }
+            }
+            
+            // Fallback to algorithmic route generation
+            return generateAlgorithmicLandRoute(source, dest, safetyLevel);
+        }
+
+        // Interpolate between waypoints to create smooth route
+        function interpolateWaypoints(waypoints, safetyLevel) {
+            const points = [];
+            const pointsPerSegment = 15;
+            
+            // Deviation factor based on safety level
+            let deviationFactor;
+            switch(safetyLevel) {
+                case 'safe': deviationFactor = 0.3; break;
+                case 'medium': deviationFactor = 0.15; break;
+                case 'danger': deviationFactor = 0.05; break;
+                default: deviationFactor = 0.15;
+            }
+            
+            for (let i = 0; i < waypoints.length - 1; i++) {
+                const start = waypoints[i];
+                const end = waypoints[i + 1];
+                
+                for (let j = 0; j < pointsPerSegment; j++) {
+                    const t = j / pointsPerSegment;
+                    
+                    // Linear interpolation
+                    let lat = start.lat + (end.lat - start.lat) * t;
+                    let lng = start.lng + (end.lng - start.lng) * t;
+                    
+                    // Add slight curve variation
+                    const dLat = end.lat - start.lat;
+                    const dLng = end.lng - start.lng;
+                    const perpAngle = Math.atan2(dLng, dLat) + Math.PI / 2;
+                    
+                    const curveStrength = Math.sin(t * Math.PI) * deviationFactor;
+                    const randomOffset = (Math.random() - 0.5) * 0.02;
+                    
+                    lat += Math.cos(perpAngle) * curveStrength + randomOffset;
+                    lng += Math.sin(perpAngle) * curveStrength + randomOffset;
+                    
+                    // Ensure point is not over water
+                    if (isPointOverWater(lat, lng)) {
+                        // Push inland (west for east coast, east for west coast)
+                        if (lng > 80) lng -= 0.5; // East coast - push west
+                        else if (lng < 75) lng += 0.5; // West coast - push east
+                    }
+                    
+                    points.push({ lat, lng });
+                }
+            }
+            
+            // Add final destination
+            points.push(waypoints[waypoints.length - 1]);
+            
+            return points;
+        }
+
+        // Algorithmic land route generation for unknown routes
+        function generateAlgorithmicLandRoute(source, dest, safetyLevel) {
+            const points = [source];
+            const numPoints = 50;
+            
+            // Calculate direction
+            const dLat = dest.lat - source.lat;
+            const dLng = dest.lng - source.lng;
+            const distance = Math.sqrt(dLat * dLat + dLng * dLng);
+            
+            // Base deviation based on safety level
+            let baseDeviation;
+            switch(safetyLevel) {
+                case 'safe': baseDeviation = distance * 0.20; break;
+                case 'medium': baseDeviation = distance * 0.10; break;
+                case 'danger': baseDeviation = distance * 0.02; break;
+                default: baseDeviation = distance * 0.10;
+            }
+            
+            for (let i = 1; i < numPoints; i++) {
+                const t = i / numPoints;
+                
+                // Linear interpolation
+                let lat = source.lat + dLat * t;
+                let lng = source.lng + dLng * t;
+                
+                // Add curved deviation
+                const curveStrength = Math.sin(t * Math.PI);
+                const perpAngle = Math.atan2(dLng, dLat) + Math.PI / 2;
+                
+                // Vary the deviation along the route for realism
+                const variation = Math.sin(t * Math.PI * 2) * 0.3 + 1;
+                const deviation = baseDeviation * curveStrength * variation;
+                
+                // Add some randomness for road-like appearance
+                const randomFactor = (Math.random() - 0.5) * baseDeviation * 0.1;
+                
+                lat += Math.cos(perpAngle) * (deviation + randomFactor);
+                lng += Math.sin(perpAngle) * (deviation + randomFactor);
+                
+                // STRICT: Ensure point is not over water - adjust if needed
+                if (isPointOverWater(lat, lng)) {
+                    // Push point inland more aggressively
+                    const inlandPush = baseDeviation * 0.8;
+                    lat += Math.cos(perpAngle) * inlandPush;
+                    lng += Math.sin(perpAngle) * inlandPush;
+                    
+                    // If still over water, push perpendicular to coast
+                    if (isPointOverWater(lat, lng)) {
+                        if (lng > 80) lng -= 0.8; // Bay of Bengal - push west
+                        else if (lng < 75) lng += 0.8; // Arabian Sea - push east
+                        if (lat < 8) lat += 0.5; // Indian Ocean - push north
+                    }
+                }
+                
+                points.push({ lat, lng });
+            }
+            
+            points.push(dest);
+            return points;
+        }
+
+        // Count danger zone intersections
+        function countDangerIntersections(points) {
+            let count = 0;
+            for (let point of points) {
+                if (isNearDangerZone(point)) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        // Generate routes with land-following paths
+        function generateRoutes(source, dest) {
+            const baseDistance = calculateDistance(source, dest);
+            
+            // Safe route - longer deviation to avoid danger zones and water
+            const safePoints = generateLandRoute(source, dest, 'safe');
+            const safeDistance = baseDistance * 1.35;
+            const safeDuration = (safeDistance / 75) * 60; // 75 km/h avg on safer roads
+            
+            // Medium route - moderate deviation
+            const mediumPoints = generateLandRoute(source, dest, 'medium');
+            const mediumDistance = baseDistance * 1.15;
+            const mediumDuration = (mediumDistance / 82) * 60; // 82 km/h avg
+            
+            // Dangerous route - more direct but still on land
+            const dangerPoints = generateLandRoute(source, dest, 'danger');
+            const dangerDistance = baseDistance * 1.02;
+            const dangerDuration = (dangerDistance / 90) * 60; // 90 km/h avg on highways
+            
+            return {
+                safe: {
+                    points: safePoints,
+                    distance: safeDistance,
+                    duration: safeDuration,
+                    safety: 'Safe',
+                    safetyClass: 'safe',
+                    color: '#22c55e',
+                    dangerCount: countDangerIntersections(safePoints)
+                },
+                medium: {
+                    points: mediumPoints,
+                    distance: mediumDistance,
+                    duration: mediumDuration,
+                    safety: 'Medium',
+                    safetyClass: 'medium',
+                    color: '#eab308',
+                    dangerCount: countDangerIntersections(mediumPoints)
+                },
+                danger: {
+                    points: dangerPoints,
+                    distance: dangerDistance,
+                    duration: dangerDuration,
+                    safety: 'Dangerous',
+                    safetyClass: 'danger',
+                    color: '#ef4444',
+                    dangerCount: countDangerIntersections(dangerPoints)
+                }
+            };
+        }
+
+        // Format distance
+        function formatDistance(km) {
+            if (km < 1) {
+                return Math.round(km * 1000) + ' m';
+            }
+            return Math.round(km) + ' km';
+        }
+
+        // Format duration
+        function formatDuration(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            if (hours > 0) {
+                return `${hours}h ${mins}m`;
+            }
+            return `${mins} min`;
+        }
+
+        // Clear existing routes and markers
+        function clearMap() {
+            routeLayers.forEach(layer => map.removeLayer(layer));
+            routeLayers = [];
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+        }
+
+        // Display route on map
+        function displayRoute(routeKey) {
+            const route = currentRoutes[routeKey];
+            if (!route) return;
+
+            // Clear previous routes but keep markers
+            routeLayers.forEach(layer => map.removeLayer(layer));
+            routeLayers = [];
+
+            // Draw route line with smooth curves
+            const latlngs = route.points.map(p => [p.lat, p.lng]);
+            const polyline = L.polyline(latlngs, {
+                color: route.color,
+                weight: 6,
+                opacity: 0.85,
+                smoothFactor: 1.5,
+                lineCap: 'round',
+                lineJoin: 'round'
+            }).addTo(map);
+            
+            // Add a subtle shadow/outline effect
+            const shadowLine = L.polyline(latlngs, {
+                color: 'rgba(0,0,0,0.2)',
+                weight: 10,
+                opacity: 0.3,
+                smoothFactor: 1.5
+            }).addTo(map);
+            
+            routeLayers.push(shadowLine);
+            routeLayers.push(polyline);
+
+            // Fit bounds with padding
+            map.fitBounds(polyline.getBounds(), { 
+                padding: [60, 60],
+                maxZoom: 12,
+                animate: true,
+                duration: 1
+            });
+
+            // Update details panel
+            updateDetailsPanel(route);
+
+            // Update active button state
+            document.querySelectorAll('.route-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn-${routeKey}`).classList.add('active');
+
+            // Update route illustration
+            updateRouteIllustration(routeKey);
+        }
+
+        // Update route illustration and character based on selected route
+        function updateRouteIllustration(routeKey) {
+            const illustrationsDiv = document.getElementById('routeIllustrations');
+            const safeIll = document.getElementById('illustration-safe');
+            const mediumIll = document.getElementById('illustration-medium');
+            const dangerIll = document.getElementById('illustration-danger');
+            
+            // Character elements
+            const characterContainer = document.getElementById('characterContainer');
+            const characterSafe = document.getElementById('character-safe');
+            const characterMedium = document.getElementById('character-medium');
+            const characterDanger = document.getElementById('character-danger');
+            
+            // Show containers
+            illustrationsDiv.style.display = 'block';
+            characterContainer.classList.add('show');
+            
+            // Hide all illustrations first
+            safeIll.style.display = 'none';
+            mediumIll.style.display = 'none';
+            dangerIll.style.display = 'none';
+            
+            // Hide all characters first
+            characterSafe.style.display = 'none';
+            characterMedium.style.display = 'none';
+            characterDanger.style.display = 'none';
+            
+            // Remove all color classes
+            characterContainer.classList.remove('safe', 'medium', 'danger');
+            
+            // Show selected based on route
+            if (routeKey === 'safe') {
+                safeIll.style.display = 'flex';
+                characterSafe.style.display = 'block';
+                characterContainer.classList.add('safe');
+            } else if (routeKey === 'medium') {
+                mediumIll.style.display = 'flex';
+                characterMedium.style.display = 'block';
+                characterContainer.classList.add('medium');
+            } else if (routeKey === 'danger') {
+                dangerIll.style.display = 'flex';
+                characterDanger.style.display = 'block';
+                characterContainer.classList.add('danger');
+            }
+        }
+
+        // Update details panel
+        function updateDetailsPanel(route) {
+            document.getElementById('detailDistance').textContent = formatDistance(route.distance);
+            document.getElementById('detailDuration').textContent = formatDuration(route.duration);
+            
+            const safetyEl = document.getElementById('detailSafety');
+            safetyEl.textContent = route.safety;
+            safetyEl.className = `detail-value ${route.safetyClass}`;
+            
+            document.getElementById('routeDetails').classList.remove('hidden');
+        }
+
+        // Create route buttons
+        function createRouteButtons() {
+            const container = document.getElementById('routeButtons');
+            container.innerHTML = '';
+
+            const routeTypes = [
+                { key: 'safe', label: 'Safe Path', icon: 'fa-shield-alt' },
+                { key: 'medium', label: 'Medium Path', icon: 'fa-balance-scale' },
+                { key: 'danger', label: 'Danger Path', icon: 'fa-exclamation-triangle' }
+            ];
+
+            routeTypes.forEach(type => {
+                const route = currentRoutes[type.key];
+                const btn = document.createElement('button');
+                btn.className = `route-btn ${route.safetyClass}`;
+                btn.id = `btn-${type.key}`;
+                btn.onclick = () => displayRoute(type.key);
+                
+                btn.innerHTML = `
+                    <span><i class="fas ${type.icon}"></i> ${type.label}</span>
+                    <span class="route-info">
+                        ${formatDistance(route.distance)}
+                        <i class="fas fa-chevron-right"></i>
+                    </span>
+                `;
+                
+                container.appendChild(btn);
+            });
+        }
+
+        // Get routes
+        function getRoutes() {
+            const sourceInput = document.getElementById('sourceInput').value;
+            const destInput = document.getElementById('destInput').value;
+
+            if (!sourceInput || !destInput) {
+                alert('Please enter both source and destination');
+                return;
+            }
+
+            const source = geocodeLocation(sourceInput);
+            const dest = geocodeLocation(destInput);
+
+            // Clear existing
+            clearMap();
+
+            // Add markers
+            const sourceMarker = L.marker([source.lat, source.lng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="background: #22c55e; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map).bindPopup('<b>Source</b>');
+
+            const destMarker = L.marker([dest.lat, dest.lng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="background: #ef4444; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map).bindPopup('<b>Destination</b>');
+
+            markers.push(sourceMarker, destMarker);
+
+            // Generate routes
+            currentRoutes = generateRoutes(source, dest);
+
+            // Create route buttons
+            createRouteButtons();
+
+            // Display safe route by default
+            displayRoute('safe');
+        }
+
+        // Set preset
+        function setPreset(presetKey) {
+            const preset = PRESETS[presetKey];
+            if (preset) {
+                document.getElementById('sourceInput').value = preset.source;
+                document.getElementById('destInput').value = preset.dest;
+                getRoutes();
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initMap);
+    </script>
+</body>
+</html>
